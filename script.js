@@ -131,8 +131,8 @@
       const cx=W/2,cy=H*.29;
       for(let i=0;i<cols*rows*.12;i++){const a=rand()*TAU,rr=rand()*Math.max(W,H)*.52,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;put(x,y,".",color([.12,.3,.85],glow*.35*Math.exp(-rr/(H*.55))));}
     }
-    rose(t);
     textGrid();
+    rose(t);
     hint.classList.toggle("visible",t>13.5);
     replay.classList.toggle("visible",t>16);
     raf=requestAnimationFrame(frame);
