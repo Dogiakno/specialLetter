@@ -892,18 +892,16 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!st.click && a >= 0) {
       st.click = true;
 
-      // 1. Android donanımsal titreşim desteği
       try {
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           navigator.vibrate([60, 80, 120, 100, 250]);
         }
       } catch (e) {}
 
-      // 2. iPhone (Safari) ve tüm tarayıcılar için fiziksel kalp atışı sarsıntısı
       const stage = document.getElementById("scene") || canvas;
       if (stage) {
         stage.classList.remove("heartbeat-shake");
-        void stage.offsetWidth; // CSS animasyonunu zorla tetikle
+        void stage.offsetWidth;
         stage.classList.add("heartbeat-shake");
       }
 
@@ -1054,7 +1052,7 @@ window.addEventListener("DOMContentLoaded", () => {
         let vis = pin * 1.3 - hs * 0.5;
         if (vis <= 0) continue;
         let k = Math.min(1.0, vis * 1.6);
-        if (tbn > 0 and tau > -0.5) {
+        if (tbn > 0 && tau > -0.5) {
           let w = (tau + 0.5) * 2.0;
           col = mix(col, [0.30, 0.10, 0.03], w * 0.75);
           if (w > 0.6) col = mix(col, [1.0, 0.38, 0.05], (w - 0.6) * 1.3);
