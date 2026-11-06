@@ -15,7 +15,7 @@ const T_FORM = 3.8;
 const T_GLOW = T_R0 + 1.8;
 const T_FIRE_END = T_BURN + T_SPREAD + 2.2;
 
-// Orijinal Python random üreteci (Seed 21)
+// Python random.Random(21) karşılığı (Orijinal tohum)
 class LCG {
   constructor(seed = 21) {
     this.m = 0x80000000;
@@ -60,11 +60,22 @@ function sc(c, k) {
   return [c[0] * k, c[1] * k, c[2] * k];
 }
 
+const LV = 40;
+const _hx = new Map();
 function hexc(c) {
-  const r = Math.round(clamp(c[0]) * 255);
-  const g = Math.round(clamp(c[1]) * 255);
-  const b = Math.round(clamp(c[2]) * 255);
-  return `rgb(${r},${g},${b})`;
+  const k0 = Math.floor(clamp(c[0]) * (LV - 0.01));
+  const k1 = Math.floor(clamp(c[1]) * (LV - 0.01));
+  const k2 = Math.floor(clamp(c[2]) * (LV - 0.01));
+  const key = (k0 << 12) | (k1 << 6) | k2;
+  let s = _hx.get(key);
+  if (!s) {
+    const r = Math.floor(k0 * 255 / (LV - 1));
+    const g = Math.floor(k1 * 255 / (LV - 1));
+    const b = Math.floor(k2 * 255 / (LV - 1));
+    s = `rgb(${r},${g},${b})`;
+    _hx.set(key, s);
+  }
+  return s;
 }
 
 const BG = [0.010, 0.007, 0.012];
@@ -74,10 +85,12 @@ rng.shuffle(_P);
 const _N = Array.from({ length: 256 }, () => rng.uniform(-1, 1));
 
 function vn(x, y) {
-  let xi = Math.floor(x) & 255;
-  let yi = Math.floor(y) & 255;
-  let xf = x - Math.floor(x);
-  let yf = y - Math.floor(y);
+  let xi = Math.floor(x);
+  let yi = Math.floor(y);
+  let xf = x - xi;
+  let yf = y - yi;
+  xi &= 255;
+  yi &= 255;
   let x1 = (xi + 1) & 255;
   let y1 = (yi + 1) & 255;
   let u = xf * xf * (3 - 2 * xf);
@@ -140,13 +153,13 @@ const BLUES = [
 ];
 const BLUE = ramp_lut(BLUES);
 
-// Sabit oran ızgarası: Python orijinaliyle tam uyumlu
+// Python Tkinter Courier / Cascadia Mono metrikleri ile birebir eşleşme
 const ROWS = 44;
-const COLS = 78;
 const CW = 11;
 const CH = 18;
-const W = COLS * CW;
-const H = ROWS * CH;
+const COLS = Math.floor(ROWS * CH / CW); // 72
+const W = COLS * CW;                    // 792
+const H = ROWS * CH;                    // 792
 const S = H / 640.0;
 
 canvas.width = W;
@@ -190,6 +203,12 @@ const TW = TXT[0].length;
 const TC0 = Math.floor(CX / CW - TW);
 const TR0 = Math.floor((HCY + 1.2 * HR) / CH) + 2;
 
+function ink(r, c) {
+  let px = Math.floor((c - TC0) / 2);
+  let py = r - TR0;
+  return c >= TC0 && px >= 0 && px < TW && py >= 0 && py < 5 && TXT[py][px] === "#";
+}
+
 function heart_f(hx, hy, s) {
   let X = hx / s;
   let Y = (hy - 0.25) / s + 0.25;
@@ -204,17 +223,12 @@ function in_seal(x, y) {
 
 const PAPER = "#%&@8";
 const FLAPC = [0.85, 0.67, 0.44];
+const BODYC = [0.73, 0.55, 0.34];
 const SIDEC = [0.66, 0.48, 0.29];
 const BOTC = [0.78, 0.60, 0.38];
 const INK = [0.14, 0.08, 0.05];
 const INKT = [0.24, 0.12, 0.06];
 const STRIPE = [[0.74, 0.17, 0.15], [0.93, 0.88, 0.76], [0.17, 0.29, 0.64]];
-
-function ink(r, c) {
-  let px = Math.floor((c - TC0) / 2);
-  let py = r - TR0;
-  return c >= TC0 && px >= 0 && px < TW && py >= 0 && py < 5 && TXT[py][px] === "#";
-}
 
 function env_style(r, c, x, y, hs, hs2) {
   if (x < EX0 || x > EX1 || y < EY0 || y > EY1) return null;
@@ -439,9 +453,8 @@ function bisectRight(arr, x) {
   return l;
 }
 
-// Global Yapılar
-let HS = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => rng.random()));
-let HS2 = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => rng.random()));
+const HS = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => rng.random()));
+const HS2 = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => rng.random()));
 
 let raw = [];
 let SHD = [];
@@ -1077,7 +1090,7 @@ function frame() {
   let bk = bed_k(t);
   if (bk > 0.01) {
     for (let [rr, cc, shp, hs, top] of BED) {
-      let fl = 0.5 + 0.5 * Math.sin(t * 6 + hs * 40);
+      let fl = 0.5 + 0.5 * Math.sin(t * 6 + hs * 40)
       let T = clamp(bk * shp * (0.25 + 0.45 * fl + 0.2 * hs));
       if (T > 0.08) newMap[`${rr},${cc}`] = ["=%#@"[Math.floor(hs * 4) % 4], LUT[Math.floor(T * 63)]];
       if (top) src[`${rr},${cc}`] = bk * shp * (0.50 + 0.38 * rng.random());
@@ -1203,7 +1216,7 @@ function frame() {
 
   ctx.fillStyle = hexc(BG);
   ctx.fillRect(0, 0, W, H);
-  ctx.font = "bold 15px 'Courier New', monospace";
+  ctx.font = `bold ${Math.floor(CH * 0.90)}px "Courier New", Courier, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
