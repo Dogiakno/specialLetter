@@ -1,22 +1,40 @@
-#  Special Letter 💌
+# Special Letter 💌
 
-A generative ASCII art animation in Python: a sealed love letter is opened with a click, burns away in a wave of fire, and its embers fly up to form a glowing rose.
+Web tarayıcısı üzerinde çalışan üretken bir **ASCII sanat animasyonu**: Mühürlü bir aşk mektubu ekrana gelir, imleç kalp mührü tıklar, zarf alevler içinde yanıp kül olur ve yükselen kıvılcımlar gökyüzünde parıldayan kırmızı bir güle dönüşür.
 
-<!-- Add a screenshot or GIF of the animation here -->
-<img width="1377" height="810" alt="WhatsApp Image 2026-11-01 at 18 30 18" src="https://github.com/user-attachments/assets/2366232b-8c37-4fb5-a858-b7438729ddf2" />
+<img width="1377" height="810" alt="Special Letter Animasyon Önizlemesi" src="https://github.com/user-attachments/assets/2366232b-8c37-4fb5-a858-b7438729ddf2" />
 
+---
 
-## Features
-- **Pure ASCII Rendering:** Every frame is drawn as colored monospace characters on a `tkinter` canvas, with 40-level color quantization and per-cell caching to keep it smooth.
-- **Cinematic Sequence:** An envelope with a heart-shaped wax seal fades in, a glowing cursor flies in and clicks the seal, and the paper ignites from the seal outward.
-- **Fire Simulation:** Burning is driven by a cellular-automaton heat field with a fire color ramp, plus rising sparks, embers and drifting smoke.
-- **Ember-to-Rose Transformation:** Embers from the burning paper float along curved paths and settle into place, building a rose (petal spirals, sepals, stem, thorns and leaves) from top to bottom.
-- **Radiant Finale:** A soft blue background with animated light rays, twinkling stars and floating motes appears behind the finished rose, with a shimmering rim light on its edges.
-- **Procedural Details:** Value noise for burn irregularity, hand-built polygon cursor, shockwave rings and click particles.
-- **Zero External Dependencies:** Built entirely with Python's standard library (`tkinter`, `math`, `random`, `time`, `bisect`).
+## 🌹 Canlı Önizleme
+Herhangi bir kurulum yapmadan doğrudan tarayıcı üzerinden açıp izleyebilirsiniz:  
+👉 **[Canlı Sürümü Aç (GitHub Pages)](https://dogiakno.github.io/specialLetter/)**
 
-## How to Run
+---
+
+## ✨ Özellikler
+
+- **Saf ASCII Çizimi:** Sahnedeki her kare yalnızca renkli monospace karakterlerle (`@`, `#`, `%`, `&`, `*`, vb.) HTML5 Canvas üzerinde piksel hassasiyetinde işlenir.
+- **Sinematik Akış:** Kalp mühürlü zarf belirir; neon imleç süzülerek kalbe tıklar ve kağıt mührün etrafından dışa doğru alev alır.
+- **Hücresel Otomat ile Ateş Simülasyonu:** Yanma etkisi, gerçekçi bir ısı haritası ve yükselen kıvılcım/duman parçacıklarıyla desteklenir.
+- **Közden Güle Dönüşüm:** Yanan zarftan saçılan közler kıvrımlı rotalar çizerek birleşir; spiral taç yapraklar, çanak yapraklar, dikenli gövde ve yapraklarıyla eksiksiz bir gül oluşturur.
+- **Işıltılı Final:** Gül tamamlandığında arka planda yumuşak mavi ışık huzmeleri, yanıp sönen yıldızlar ve havada süzülen ışıltı parçacıkları parıldar.
+- **Tam Duyarlı (Responsive) Tasarım:** Orijinal matematiksel oranlar korunarak hem dikey telefon ekranlarına hem de yatay masaüstü tarayıcılara otomatik olarak uyum sağlar.
+- **Haptic / Titreşim Desteği:** Destekleyen mobil cihazlarda kalbin tıklandığı an hafif bir titreşimle dokunsal his sağlanır.
+
+---
+
+## 🛠️ Nasıl Çalıştırılır?
+
+### Web Sürümü (Tarayıcı)
+Ek bir kütüphane veya paket yöneticisi gerektirmez. Dosyaları klonlayıp doğrudan `index.html` dosyasını tarayıcınızda açabilirsiniz:
 
 ```bash
-python letter.py
-```
+git clone [https://github.com/Dogiakno/specialLetter.git](https://github.com/Dogiakno/specialLetter.git)
+cd specialLetter
+open index.html # veya tarayıcınız ile çift tıklayarak açın
+---
+
+## 👏 Teşekkür & Atıf
+
+Bu proje, **[iremcnar/specialLetter](https://github.com/iremcnar/specialLetter)** reposundaki orijinal Python / Tkinter animasyon matematiği temel alınarak web ortamına (HTML5 Canvas + JavaScript) uyarlanmış, mobil cihaz uyumluluğu ve modern web özellikleri eklenerek yeniden düzenlenmiştir.

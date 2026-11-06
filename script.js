@@ -897,6 +897,16 @@ function draw_click(t, dt, newMap) {
       let sp = rng.uniform(120, 560) * S;
       bits.push([TGX, TGY, Math.cos(ang) * sp, Math.sin(ang) * sp, 0.0, rng.uniform(0.5, 1.1)]);
     }
+      if (!st.click && a >= 0) {
+    st.click = true;
+    
+    // Telefonda kalp atışı ritminde titreşim (Destekleyen Android/tarayıcılarda)
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate([60, 80, 120, 100, 250]); // lup-dup ve patlama
+    }
+
+    for (let i = 0; i < 52; i++) {
+
   }
   if (a < 0 || a > 1.2) return;
 
