@@ -15,7 +15,6 @@ const T_FORM = 3.8;
 const T_GLOW = T_R0 + 1.8;
 const T_FIRE_END = T_BURN + T_SPREAD + 2.2;
 
-// Python random.Random(21) karşılığı (Orijinal tohum)
 class LCG {
   constructor(seed = 21) {
     this.m = 0x80000000;
@@ -153,13 +152,12 @@ const BLUES = [
 ];
 const BLUE = ramp_lut(BLUES);
 
-// Python Tkinter Courier / Cascadia Mono metrikleri ile birebir eşleşme
 const ROWS = 44;
 const CW = 11;
 const CH = 18;
-const COLS = Math.floor(ROWS * CH / CW); // 72
-const W = COLS * CW;                    // 792
-const H = ROWS * CH;                    // 792
+const COLS = Math.floor(ROWS * CH / CW);
+const W = COLS * CW;
+const H = ROWS * CH;
 const S = H / 640.0;
 
 canvas.width = W;
@@ -223,7 +221,6 @@ function in_seal(x, y) {
 
 const PAPER = "#%&@8";
 const FLAPC = [0.85, 0.67, 0.44];
-const BODYC = [0.73, 0.55, 0.34];
 const SIDEC = [0.66, 0.48, 0.29];
 const BOTC = [0.78, 0.60, 0.38];
 const INK = [0.14, 0.08, 0.05];
@@ -892,21 +889,18 @@ function draw_click(t, dt, newMap) {
   let a = t - T_CLICK;
   if (!st.click && a >= 0) {
     st.click = true;
+    
+    try {
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([60, 80, 120, 100, 250]);
+      }
+    } catch (e) {}
+
     for (let i = 0; i < 52; i++) {
       let ang = rng.uniform(0, 2 * Math.PI);
       let sp = rng.uniform(120, 560) * S;
       bits.push([TGX, TGY, Math.cos(ang) * sp, Math.sin(ang) * sp, 0.0, rng.uniform(0.5, 1.1)]);
     }
-      if (!st.click && a >= 0) {
-    st.click = true;
-    
-    // Telefonda kalp atışı ritminde titreşim (Destekleyen Android/tarayıcılarda)
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate([60, 80, 120, 100, 250]); // lup-dup ve patlama
-    }
-
-    for (let i = 0; i < 52; i++) {
-
   }
   if (a < 0 || a > 1.2) return;
 
@@ -1100,7 +1094,7 @@ function frame() {
   let bk = bed_k(t);
   if (bk > 0.01) {
     for (let [rr, cc, shp, hs, top] of BED) {
-      let fl = 0.5 + 0.5 * Math.sin(t * 6 + hs * 40)
+      let fl = 0.5 + 0.5 * Math.sin(t * 6 + hs * 40);
       let T = clamp(bk * shp * (0.25 + 0.45 * fl + 0.2 * hs));
       if (T > 0.08) newMap[`${rr},${cc}`] = ["=%#@"[Math.floor(hs * 4) % 4], LUT[Math.floor(T * 63)]];
       if (top) src[`${rr},${cc}`] = bk * shp * (0.50 + 0.38 * rng.random());
