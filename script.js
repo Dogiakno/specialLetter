@@ -95,7 +95,7 @@
     for(let i=0;i<Math.ceil(30*dt);i++){const x=e.x+rand()*e.w,y=baseY-rand()*H*.25;sparks.push({x,y,vx:(rand()-.5)*70,vy:-50-rand()*130,life:.7+rand(),age:0,c:ramp(palette,.7+rand()*.3)});}
   }
   function rose(t) {
-    const t0=9.3, progress=ease((t-t0)/3.8); if(progress<=0)return;
+    const t0=7.0, progress=ease((t-t0)/3.8); if(progress<=0)return;
     const cx=W/2, cy=H*.29, rr=Math.min(W*.175,H*.13), stemEnd=H*.885;
     const drawPetal=(a,r,scale)=>{ctx.beginPath();ctx.ellipse(cx+Math.cos(a)*r*.38,cy+Math.sin(a)*r*.25,rr*scale,rr*scale*.52,a,0,TAU);ctx.fill();};
     ctx.save();ctx.globalAlpha=progress;ctx.shadowColor="#ff234e";ctx.shadowBlur=18;
