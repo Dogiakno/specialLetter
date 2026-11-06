@@ -1,11 +1,69 @@
-* { box-sizing: border-box; }
-html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #030206; }
-body { color: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-#stage { position: relative; width: 100%; height: 100%; min-height: 100svh; background: radial-gradient(ellipse at 50% 55%, #100914 0%, #050309 55%, #020104 100%); }
-canvas { display: block; width: 100%; height: 100%; }
-.hint { position: absolute; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%); color: rgba(255,220,238,.72); font-size: clamp(10px, 2.8vw, 13px); letter-spacing: .12em; white-space: nowrap; text-shadow: 0 0 12px #e84d9a; opacity: 0; transition: opacity .8s ease; pointer-events: none; }
-.hint.visible { opacity: 1; }
-#replay { position: absolute; right: max(16px, env(safe-area-inset-right)); top: max(16px, env(safe-area-inset-top)); width: 42px; height: 42px; border: 1px solid rgba(255,210,235,.24); border-radius: 50%; color: #f6c7df; background: rgba(22,10,22,.45); font-size: 25px; cursor: pointer; opacity: 0; transition: opacity .5s, background .2s; }
-#replay.visible { opacity: .8; }
-#replay:active { background: rgba(180,55,115,.4); }
-@media (prefers-reduced-motion: reduce) { .hint, #replay { transition: none; } }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #030206;
+  font-family: monospace;
+}
+
+#container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at center, #07050d 0%, #030206 100%);
+}
+
+#scene {
+  display: block;
+  touch-action: none;
+}
+
+.hint {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 230, 240, 0.7);
+  font-size: 14px;
+  letter-spacing: 1px;
+  pointer-events: none;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: opacity 1.5s ease;
+  user-select: none;
+}
+
+#replay {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 20px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.4;
+  transition: opacity 0.3s, background 0.3s, transform 0.2s;
+  z-index: 10;
+}
+
+#replay:hover, #replay:active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.08);
+}
