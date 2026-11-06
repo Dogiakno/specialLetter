@@ -1,5 +1,3 @@
-// Orijinal Python (Tkinter) matematiğinin birebir JS Canvas portu
-
 const canvas = document.getElementById("scene");
 const ctx = canvas.getContext("2d");
 const hint = document.getElementById("hint");
@@ -17,6 +15,7 @@ const T_FORM = 3.8;
 const T_GLOW = T_R0 + 1.8;
 const T_FIRE_END = T_BURN + T_SPREAD + 2.2;
 
+// Orijinal Python random üreteci (Seed 21)
 class LCG {
   constructor(seed = 21) {
     this.m = 0x80000000;
@@ -75,12 +74,10 @@ rng.shuffle(_P);
 const _N = Array.from({ length: 256 }, () => rng.uniform(-1, 1));
 
 function vn(x, y) {
-  let xi = Math.floor(x);
-  let yi = Math.floor(y);
-  let xf = x - xi;
-  let yf = y - yi;
-  xi &= 255;
-  yi &= 255;
+  let xi = Math.floor(x) & 255;
+  let yi = Math.floor(y) & 255;
+  let xf = x - Math.floor(x);
+  let yf = y - Math.floor(y);
   let x1 = (xi + 1) & 255;
   let y1 = (yi + 1) & 255;
   let u = xf * xf * (3 - 2 * xf);
@@ -143,13 +140,35 @@ const BLUES = [
 ];
 const BLUE = ramp_lut(BLUES);
 
-let CW, CH, ROWS, COLS, W, H, S, CX, EW, EH, ECY, EX0, EX1, EY0, EY1;
-let FLAP_H, TIPY, HR, HCY, XPL, XPR, YPL, IGX, IGY, TGX, TGY;
-let RX, RR, RY, STEM_Y1, HEAD_B, TOP_Y, STEM_HW;
-let HS, HS2, ENVC, SEALC, ENV_SORTED, TBS, SHDC, BED, ROSEC, ROSEMASK, EDGE, HALO, RP;
-let BGE, BGCH, BGC = {}, RAYF, RAYM, MOTES, STARS;
-let CUR_FILL, CUR_EDGE, CUR_GLOW, CUR_SHAD;
-let HEAT;
+// Sabit oran ızgarası: Python orijinaliyle tam uyumlu
+const ROWS = 44;
+const COLS = 78;
+const CW = 11;
+const CH = 18;
+const W = COLS * CW;
+const H = ROWS * CH;
+const S = H / 640.0;
+
+canvas.width = W;
+canvas.height = H;
+
+const CX = W / 2.0;
+const EW = 0.76 * W;
+const EH = 0.74 * EW;
+const ECY = 0.55 * H;
+const EX0 = CX - EW / 2;
+const EX1 = CX + EW / 2;
+const EY0 = ECY - EH / 2;
+const EY1 = ECY + EH / 2;
+const FLAP_H = 0.50 * EH;
+const TIPY = EY0 + FLAP_H;
+const HR = 0.062 * H;
+const HCY = TIPY - 0.25 * HR;
+const XPL = CX - 0.17 * EW;
+const XPR = CX + 0.17 * EW;
+const YPL = EY0 + FLAP_H * (1 - 0.17 * EW / (EW / 2));
+const IGX = CX;
+const IGY = HCY;
 
 const GLYPH = {
   "F": ["###", "#..", "##.", "#..", "#.."],
@@ -168,7 +187,8 @@ for (let _i = 0; _i < TEXT.length; _i++) {
   }
 }
 const TW = TXT[0].length;
-let TC0, TR0;
+const TC0 = Math.floor(CX / CW - TW);
+const TR0 = Math.floor((HCY + 1.2 * HR) / CH) + 2;
 
 function heart_f(hx, hy, s) {
   let X = hx / s;
@@ -241,6 +261,14 @@ function env_style(r, c, x, y, hs, hs2) {
   return [PAPER[Math.floor(hs * PAPER.length) % PAPER.length], [base[0] * k, base[1] * k, base[2] * k]];
 }
 
+const RX = CX;
+const RR = 0.175 * H;
+const RY = 0.290 * H;
+const STEM_Y1 = 0.885 * H;
+const HEAD_B = RY + 1.38 * RR;
+const TOP_Y = RY - 1.1 * RR;
+const STEM_HW = 0.80 * CW;
+
 const LAYERS = [
   [1.00, 5, 0.00, 0.17],
   [0.82, 5, 0.90, 0.16],
@@ -249,6 +277,7 @@ const LAYERS = [
 ];
 const LBASE = [0.34, 0.40, 0.46, 0.52];
 const SPIR_R = 0.30;
+
 const SEPALS = [
   [-0.55, 1.00, 212, 1.00, 0.13, -0.10],
   [-0.22, 1.10, 245, 0.90, 0.11, -0.08],
@@ -261,7 +290,7 @@ const LEAVES = [
   [2.70, 28, 1.45, 0.33, -0.14],
   [3.10, 155, 1.10, 0.26, 0.12],
 ];
-let THORNS = [];
+const THORNS = [[0.60 * H, 1], [0.69 * H, -1], [0.77 * H, 1]];
 const GREEN_D = [0.03, 0.14, 0.05];
 const GREEN_L = [0.14, 0.45, 0.18];
 
@@ -410,274 +439,114 @@ function bisectRight(arr, x) {
   return l;
 }
 
-function initScene() {
-  rng = new LCG(21);
-  const winW = window.innerWidth;
-  const winH = window.innerHeight;
+// Global Yapılar
+let HS = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => rng.random()));
+let HS2 = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => rng.random()));
 
-  ROWS = Math.max(34, Math.min(48, Math.floor(winH / 18)));
-  CH = Math.floor(winH / ROWS);
-  CW = Math.floor(CH * 0.58);
-  COLS = Math.floor(winW / CW);
-
-  W = COLS * CW;
-  H = ROWS * CH;
-  S = H / 640.0;
-
-  canvas.width = W;
-  canvas.height = H;
-  canvas.style.width = `${W}px`;
-  canvas.style.height = `${H}px`;
-
-  CX = W / 2.0;
-  EW = Math.min(0.85 * W, 480);
-  EH = 0.74 * EW;
-  ECY = 0.55 * H;
-  EX0 = CX - EW / 2; EX1 = CX + EW / 2;
-  EY0 = ECY - EH / 2; EY1 = ECY + EH / 2;
-  FLAP_H = 0.50 * EH;
-  TIPY = EY0 + FLAP_H;
-  HR = 0.062 * H;
-  HCY = TIPY - 0.25 * HR;
-  XPL = CX - 0.17 * EW; XPR = CX + 0.17 * EW;
-  YPL = EY0 + FLAP_H * (1 - 0.17 * EW / (EW / 2));
-  IGX = CX; IGY = HCY;
-
-  TC0 = Math.floor(CX / CW - TW);
-  TR0 = Math.floor((HCY + 1.2 * HR) / CH) + 2;
-
-  HS = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => rng.random()));
-  HS2 = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => rng.random()));
-
-  let raw = [];
-  let SHD = [];
-  for (let r = 0; r < ROWS; r++) {
-    let y = (r + 0.5) * CH;
-    for (let c = 0; c < COLS; c++) {
-      let x = (c + 0.5) * CW;
-      let s_ = env_style(r, c, x, y, HS[r][c], HS2[r][c]);
-      if (s_ !== null) {
-        raw.push([r, c, s_[0], s_[1], x, y]);
-      } else if (EX0 + 0.9 * CW <= x && x <= EX1 + 1.8 * CW && EY0 + 0.8 * CH <= y && y <= EY1 + 2.0 * CH) {
-        SHD.push([r, c, x, y]);
-      }
+let raw = [];
+let SHD = [];
+for (let r = 0; r < ROWS; r++) {
+  let y = (r + 0.5) * CH;
+  for (let c = 0; c < COLS; c++) {
+    let x = (c + 0.5) * CW;
+    let s_ = env_style(r, c, x, y, HS[r][c], HS2[r][c]);
+    if (s_ !== null) {
+      raw.push([r, c, s_[0], s_[1], x, y]);
+    } else if (EX0 + 0.9 * CW <= x && x <= EX1 + 1.8 * CW && EY0 + 0.8 * CH <= y && y <= EY1 + 2.0 * CH) {
+      SHD.push([r, c, x, y]);
     }
   }
+}
 
-  let MAXD = 0;
-  for (let e of raw) {
-    let d = Math.hypot(e[4] - IGX, e[5] - IGY);
-    if (d > MAXD) MAXD = d;
-  }
-  if (MAXD === 0) MAXD = 1;
+let MAXD = 0;
+for (let e of raw) {
+  let d = Math.hypot(e[4] - IGX, e[5] - IGY);
+  if (d > MAXD) MAXD = d;
+}
+if (MAXD === 0) MAXD = 1;
 
-  ENVC = [];
-  SEALC = [];
-  for (let [r, c, ch, col, x, y] of raw) {
-    let d = Math.hypot(x - IGX, y - IGY);
-    let nzv = vn(x * 0.035 + 4, y * 0.035 + 9) * 0.5 + 0.5;
-    let tb = T_SPREAD * Math.pow(d / MAXD, 0.92) + 0.6 * nzv * Math.min(1.0, d / (0.12 * H));
-    ENVC.push([r, c, ch, col, tb, HS[r][c], HS2[r][c], x, y]);
-    if (in_seal(x, y)) SEALC.push([r, c]);
-  }
+let ENVC = [];
+let SEALC = [];
+for (let [r, c, ch, col, x, y] of raw) {
+  let d = Math.hypot(x - IGX, y - IGY);
+  let nzv = vn(x * 0.035 + 4, y * 0.035 + 9) * 0.5 + 0.5;
+  let tb = T_SPREAD * Math.pow(d / MAXD, 0.92) + 0.6 * nzv * Math.min(1.0, d / (0.12 * H));
+  ENVC.push([r, c, ch, col, tb, HS[r][c], HS2[r][c], x, y]);
+  if (in_seal(x, y)) SEALC.push([r, c]);
+}
 
-  ENV_SORTED = [...ENVC].sort((a, b) => a[4] - b[4]);
-  TBS = ENV_SORTED.map(e => e[4]);
+let ENV_SORTED = [...ENVC].sort((a, b) => a[4] - b[4]);
+let TBS = ENV_SORTED.map(e => e[4]);
 
-  SHDC = [];
-  for (let [r, c, x, y] of SHD) {
-    let d = Math.hypot(x - IGX, y - IGY);
-    let tb = T_SPREAD * Math.pow(d / MAXD, 0.92);
-    let ex = Math.max(0.0, x - EX1, EX0 - x);
-    let ey = Math.max(0.0, y - EY1, EY0 - y);
-    let f = 1 - clamp(Math.hypot(ex, ey) / (2.0 * CW));
-    SHDC.push([r, c, f > 0.45 ? ":" : ".", sc([0.12, 0.08, 0.06], 0.35 + 0.65 * f), tb, HS[r][c]]);
-  }
+let SHDC = [];
+for (let [r, c, x, y] of SHD) {
+  let d = Math.hypot(x - IGX, y - IGY);
+  let tb = T_SPREAD * Math.pow(d / MAXD, 0.92);
+  let ex = Math.max(0.0, x - EX1, EX0 - x);
+  let ey = Math.max(0.0, y - EY1, EY0 - y);
+  let f = 1 - clamp(Math.hypot(ex, ey) / (2.0 * CW));
+  SHDC.push([r, c, f > 0.45 ? ":" : ".", sc([0.12, 0.08, 0.06], 0.35 + 0.65 * f), tb, HS[r][c]]);
+}
 
-  BED = [];
-  let RB0 = Math.floor(EY1 / CH) + 1;
-  for (let rr_ of [RB0, RB0 + 1]) {
-    if (rr_ >= ROWS) continue;
-    for (let c = 0; c < COLS; c++) {
-      let x = (c + 0.5) * CW;
-      let u = 1 - Math.pow((x - CX) / (EW * 0.50), 2);
-      if (u > 0.12) {
-        BED.push([rr_, c, Math.pow(u, 0.5), HS[rr_][c], rr_ === RB0]);
-      }
+let BED = [];
+let RB0 = Math.floor(EY1 / CH) + 1;
+for (let rr_ of [RB0, RB0 + 1]) {
+  if (rr_ >= ROWS) continue;
+  for (let c = 0; c < COLS; c++) {
+    let x = (c + 0.5) * CW;
+    let u = 1 - Math.pow((x - CX) / (EW * 0.50), 2);
+    if (u > 0.12) {
+      BED.push([rr_, c, Math.pow(u, 0.5), HS[rr_][c], rr_ === RB0]);
     }
   }
+}
 
-  RX = CX;
-  RR = 0.175 * H;
-  RY = 0.290 * H;
-  STEM_Y1 = 0.885 * H;
-  HEAD_B = RY + 1.38 * RR;
-  TOP_Y = RY - 1.1 * RR;
-  STEM_HW = 0.80 * CW;
-  THORNS = [[0.60 * H, 1], [0.69 * H, -1], [0.77 * H, 1]];
+let RAWR = [];
+for (let r = 0; r < ROWS; r++) {
+  let y = (r + 0.5) * CH;
+  for (let c = 0; c < COLS; c++) {
+    let x = (c + 0.5) * CW;
+    let smp = rose_sample(x, y);
+    if (smp !== null) RAWR.push([r, c, smp, HS[r][c], HS2[r][c], x, y]);
+  }
+}
 
-  let RAWR = [];
-  for (let r = 0; r < ROWS; r++) {
-    let y = (r + 0.5) * CH;
-    for (let c = 0; c < COLS; c++) {
-      let x = (c + 0.5) * CW;
-      let smp = rose_sample(x, y);
-      if (smp !== null) RAWR.push([r, c, smp, HS[r][c], HS2[r][c], x, y]);
+let ROSEMASK = new Set(RAWR.map(e => `${e[0]},${e[1]}`));
+let EDGE = new Set();
+let HALO = new Set();
+for (let key of ROSEMASK) {
+  let [r_, c_] = key.split(",").map(Number);
+  for (let [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (!ROSEMASK.has(`${r_ + dr},${c_ + dc}`)) EDGE.add(key);
+  }
+  for (let dr of [-1, 0, 1]) {
+    for (let dc of [-1, 0, 1]) {
+      let q = `${r_ + dr},${c_ + dc}`;
+      if (!ROSEMASK.has(q)) HALO.add(q);
     }
   }
+}
 
-  ROSEMASK = new Set(RAWR.map(e => `${e[0]},${e[1]}`));
-  EDGE = new Set();
-  HALO = new Set();
-  for (let key of ROSEMASK) {
-    let [r_, c_] = key.split(",").map(Number);
-    for (let [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      if (!ROSEMASK.has(`${r_ + dr},${c_ + dc}`)) EDGE.add(key);
-    }
-    for (let dr of [-1, 0, 1]) {
-      for (let dc of [-1, 0, 1]) {
-        let q = `${r_ + dr},${c_ + dc}`;
-        if (!ROSEMASK.has(q)) HALO.add(q);
-      }
-    }
-  }
+let ROSEC = [];
+for (let [r, c, smp, hs, hs2, x, y] of RAWR) {
+  let [ch, col] = rose_style(smp, hs, hs2);
+  let k = clamp((y - TOP_Y) / (STEM_Y1 - TOP_Y));
+  let tk_ = T_R0 + 0.1 + k * T_FORM + rng.random() * 0.40;
+  ROSEC.push([tk_, r, c, ch, col, x, y, EDGE.has(`${r},${c}`), hs]);
+}
 
-  ROSEC = [];
-  for (let [r, c, smp, hs, hs2, x, y] of RAWR) {
-    let [ch, col] = rose_style(smp, hs, hs2);
-    let k = clamp((y - TOP_Y) / (STEM_Y1 - TOP_Y));
-    let tk_ = T_R0 + 0.1 + k * T_FORM + rng.random() * 0.40;
-    ROSEC.push([tk_, r, c, ch, col, x, y, EDGE.has(`${r},${c}`), hs]);
-  }
-
-  RP = [];
-  for (let [tk_, r, c, ch, col, x, y, ed, hs] of ROSEC) {
-    let lim = tk_ - T_BURN - 0.85;
-    let n = bisectRight(TBS, lim);
-    let src = ENV_SORTED[rng.randrange(Math.max(1, n))];
-    let sx_ = src[7], sy_ = src[8];
-    let ts = Math.max(T_BURN + src[4] + 0.1, tk_ - 2.2);
-    ts = Math.min(ts, tk_ - 0.75);
-    let dx_ = x - sx_, dy_ = y - sy_;
-    let dd = Math.hypot(dx_, dy_) + 1e-6;
-    RP.push([ts, tk_, sx_, sy_, x, y, -dy_ / dd, dx_ / dd,
-             rng.uniform(-0.12, 0.12) * dd, rng.uniform(0.05, 0.13) * H, rng.uniform(0, 6.28)]);
-  }
-
-  const LX = RX, LY = RY;
-  const NB = 720;
-  BGE = [];
-  for (let r = 0; r < ROWS; r++) {
-    let y = (r + 0.5) * CH;
-    for (let c = 0; c < COLS; c++) {
-      if (ROSEMASK.has(`${r},${c}`)) continue;
-      let x = (c + 0.5) * CW;
-      let dx_ = x - LX, dy_ = y - LY;
-      let a_ = Math.atan2(dy_, dx_);
-      let dn = Math.hypot(dx_, dy_) / (0.55 * H);
-      let ab = (Math.floor(((a_ + Math.PI) / (2 * Math.PI)) * NB) % NB + NB) % NB;
-      BGE.push([r, c, ab, dn, HALO.has(`${r},${c}`)]);
-    }
-  }
-
-  const NCH = 3;
-  BGCH = Array.from({ length: NCH }, (_, i) => BGE.filter((_, idx) => idx % NCH === i));
-  BGC = {};
-  RAYF = new Float32Array(NB);
-  RAYM = new Float32Array(NB);
-
-  MOTES = Array.from({ length: 46 }, () => [
-    rng.uniform(0, W), rng.uniform(0, H), rng.uniform(0.01, 0.04) * H,
-    rng.uniform(0, 6.28), rng.uniform(0.5, 1.0)
-  ]);
-
-  STARS = [];
-  for (let i = 0; i < 60; i++) {
-    let rr_ = rng.randrange(ROWS), cc_ = rng.randrange(COLS);
-    if (!ROSEMASK.has(`${rr_},${cc_}`)) {
-      STARS.push([rr_, cc_, rng.uniform(0, 6.28), rng.uniform(0.6, 2.2)]);
-    }
-  }
-
-  TGX = CX - 0.004 * W;
-  TGY = HCY - 0.015 * H;
-
-  const ARW = [[0.0, 0.0], [0.0, 0.86], [0.19, 0.69], [0.31, 0.99], [0.44, 0.93], [0.32, 0.65], [0.58, 0.65]];
-  const PH_ = 0.21 * H;
-  const POLY = ARW.map(([x, y]) => [x * PH_, y * PH_]);
-
-  function _pip(px, py) {
-    let ins = false;
-    let j = POLY.length - 1;
-    for (let i = 0; i < POLY.length; i++) {
-      let [xi, yi] = POLY[i];
-      let [xj, yj] = POLY[j];
-      if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi + 1e-9) + xi) {
-        ins = !ins;
-      }
-      j = i;
-    }
-    return ins;
-  }
-
-  function _pdist(px, py) {
-    let best = 1e9;
-    for (let i = 0; i < POLY.length; i++) {
-      let [ax, ay] = POLY[i];
-      let [bx, by] = POLY[(i + 1) % POLY.length];
-      let vx = bx - ax, vy = by - ay;
-      let L2 = vx * vx + vy * vy + 1e-9;
-      let t_ = clamp(((px - ax) * vx + (py - ay) * vy) / L2);
-      let d = Math.hypot(px - (ax + vx * t_), py - (ay + vy * t_));
-      if (d < best) best = d;
-    }
-    return best;
-  }
-
-  CUR_FILL = []; CUR_EDGE = []; CUR_GLOW = []; CUR_SHAD = [];
-  let _occ = new Set();
-  let _NC = Math.floor(0.58 * PH_ / CW) + 3;
-  let _NR = Math.floor(PH_ / CH) + 3;
-
-  for (let j = 0; j < _NR; j++) {
-    for (let i = 0; i < _NC; i++) {
-      let cin = 0, core = 0;
-      for (let sy of [1/6, 3/6, 5/6]) {
-        for (let sx of [1/6, 3/6, 5/6]) {
-          let px = (i + sx) * CW, py = (j + sy) * CH;
-          if (_pip(px, py)) {
-            cin++;
-            if (_pdist(px, py) > 0.9 * CW) core++;
-          }
-        }
-      }
-      let cxm = (i + 0.5) * CW, cym = (j + 0.5) * CH;
-      let h_ = ((j * 7 + i * 13) % 10) / 10.0;
-      if (core >= 5) {
-        let t_ = clamp((cym / PH_) * 0.85 + (cxm / (0.58 * PH_)) * 0.15);
-        let col = mix([0.52, 0.22, 0.97], [1.0, 0.42, 0.74], t_);
-        let bev = _pdist(cxm, cym) < 1.8 * CW;
-        if (bev) col = mix(col, [1.0, 0.92, 1.0], 0.20);
-        CUR_FILL.push([j, i, bev ? "%" : "@", col, h_]);
-        _occ.add(`${j},${i}`);
-      } else if (cin >= 3) {
-        CUR_EDGE.push([j, i, h_]);
-        _occ.add(`${j},${i}`);
-      } else {
-        let d = _pdist(cxm, cym);
-        if (d < 1.9 * CW) {
-          CUR_GLOW.push([j, i, 1 - d / (1.9 * CW), h_]);
-        }
-      }
-    }
-  }
-
-  for (let key of _occ) {
-    let [j, i] = key.split(",").map(Number);
-    if (!_occ.has(`${j + 1},${i + 1}`)) CUR_SHAD.push([j + 1, i + 1]);
-  }
-
-  HEAT = Array.from({ length: ROWS + 2 }, () => new Float32Array(COLS));
+let RP = [];
+for (let [tk_, r, c, ch, col, x, y, ed, hs] of ROSEC) {
+  let lim = tk_ - T_BURN - 0.85;
+  let n = bisectRight(TBS, lim);
+  let src = ENV_SORTED[rng.randrange(Math.max(1, n))];
+  let sx_ = src[7], sy_ = src[8];
+  let ts = Math.max(T_BURN + src[4] + 0.1, tk_ - 2.2);
+  ts = Math.min(ts, tk_ - 0.75);
+  let dx_ = x - sx_, dy_ = y - sy_;
+  let dd = Math.hypot(dx_, dy_) + 1e-6;
+  RP.push([ts, tk_, sx_, sy_, x, y, -dy_ / dd, dx_ / dd,
+           rng.uniform(-0.12, 0.12) * dd, rng.uniform(0.05, 0.13) * H, rng.uniform(0, 6.28)]);
 }
 
 function fpos(f, s) {
@@ -689,12 +558,32 @@ function fpos(f, s) {
   return [x, y];
 }
 
-const BGRAMP = ".:-=+*#";
+const LX = RX, LY = RY;
+const NB = 720;
+let BGE = [];
+for (let r = 0; r < ROWS; r++) {
+  let y = (r + 0.5) * CH;
+  for (let c = 0; c < COLS; c++) {
+    if (ROSEMASK.has(`${r},${c}`)) continue;
+    let x = (c + 0.5) * CW;
+    let dx_ = x - LX, dy_ = y - LY;
+    let a_ = Math.atan2(dy_, dx_);
+    let dn = Math.hypot(dx_, dy_) / (0.55 * H);
+    let ab = (Math.floor(((a_ + Math.PI) / (2 * Math.PI)) * NB) % NB + NB) % NB;
+    BGE.push([r, c, ab, dn, HALO.has(`${r},${c}`)]);
+  }
+}
+
+const NCH = 3;
+let BGCH = Array.from({ length: NCH }, (_, i) => BGE.filter((_, idx) => idx % NCH === i));
+let BGC = {};
+let RAYF = new Float32Array(NB);
+let RAYM = new Float32Array(NB);
 const LIGHTC = [0.55, 0.75, 1.0];
 const WHITE = [0.95, 0.98, 1.0];
+const BGRAMP = ".:-=+*#";
 
 function bg_tables(tt) {
-  const NB = 720;
   for (let i = 0; i < NB; i++) {
     let a = -Math.PI + (i + 0.5) * (2 * Math.PI / NB);
     let r1 = Math.pow(0.5 + 0.5 * Math.sin(a * 23 + 1.6 * Math.sin(a * 3 + tt * 0.15) + tt * 0.10), 6);
@@ -722,6 +611,19 @@ function bg_eval(e, tt, gt) {
   I = Math.min(I, 1.3);
   let ch = BGRAMP[Math.min(BGRAMP.length - 1, Math.floor(I * BGRAMP.length * 0.8))];
   return [ch, BLUE[Math.floor(clamp(I) * 63)]];
+}
+
+let MOTES = Array.from({ length: 46 }, () => [
+  rng.uniform(0, W), rng.uniform(0, H), rng.uniform(0.01, 0.04) * H,
+  rng.uniform(0, 6.28), rng.uniform(0.5, 1.0)
+]);
+
+let STARS = [];
+for (let i = 0; i < 60; i++) {
+  let rr_ = rng.randrange(ROWS), cc_ = rng.randrange(COLS);
+  if (!ROSEMASK.has(`${rr_},${cc_}`)) {
+    STARS.push([rr_, cc_, rng.uniform(0, 6.28), rng.uniform(0.6, 2.2)]);
+  }
 }
 
 function draw_ambient(t, dt, gt, newMap) {
@@ -752,6 +654,84 @@ function draw_ambient(t, dt, gt, newMap) {
   }
 }
 
+const TGX = CX - 0.004 * W;
+const TGY = HCY - 0.015 * H;
+
+const ARW = [[0.0, 0.0], [0.0, 0.86], [0.19, 0.69], [0.31, 0.99], [0.44, 0.93], [0.32, 0.65], [0.58, 0.65]];
+const PH_ = 0.21 * H;
+const POLY = ARW.map(([x, y]) => [x * PH_, y * PH_]);
+
+function _pip(px, py) {
+  let ins = false;
+  let j = POLY.length - 1;
+  for (let i = 0; i < POLY.length; i++) {
+    let [xi, yi] = POLY[i];
+    let [xj, yj] = POLY[j];
+    if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi + 1e-9) + xi) {
+      ins = !ins;
+    }
+    j = i;
+  }
+  return ins;
+}
+
+function _pdist(px, py) {
+  let best = 1e9;
+  for (let i = 0; i < POLY.length; i++) {
+    let [ax, ay] = POLY[i];
+    let [bx, by] = POLY[(i + 1) % POLY.length];
+    let vx = bx - ax, vy = by - ay;
+    let L2 = vx * vx + vy * vy + 1e-9;
+    let t_ = clamp(((px - ax) * vx + (py - ay) * vy) / L2);
+    let d = Math.hypot(px - (ax + vx * t_), py - (ay + vy * t_));
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+let CUR_FILL = [], CUR_EDGE = [], CUR_GLOW = [], CUR_SHAD = [];
+let _occ = new Set();
+let _NC = Math.floor(0.58 * PH_ / CW) + 3;
+let _NR = Math.floor(PH_ / CH) + 3;
+
+for (let j = 0; j < _NR; j++) {
+  for (let i = 0; i < _NC; i++) {
+    let cin = 0, core = 0;
+    for (let sy of [1/6, 3/6, 5/6]) {
+      for (let sx of [1/6, 3/6, 5/6]) {
+        let px = (i + sx) * CW, py = (j + sy) * CH;
+        if (_pip(px, py)) {
+          cin++;
+          if (_pdist(px, py) > 0.9 * CW) core++;
+        }
+      }
+    }
+    let cxm = (i + 0.5) * CW, cym = (j + 0.5) * CH;
+    let h_ = ((j * 7 + i * 13) % 10) / 10.0;
+    if (core >= 5) {
+      let t_ = clamp((cym / PH_) * 0.85 + (cxm / (0.58 * PH_)) * 0.15);
+      let col = mix([0.52, 0.22, 0.97], [1.0, 0.42, 0.74], t_);
+      let bev = _pdist(cxm, cym) < 1.8 * CW;
+      if (bev) col = mix(col, [1.0, 0.92, 1.0], 0.20);
+      CUR_FILL.push([j, i, bev ? "%" : "@", col, h_]);
+      _occ.add(`${j},${i}`);
+    } else if (cin >= 3) {
+      CUR_EDGE.push([j, i, h_]);
+      _occ.add(`${j},${i}`);
+    } else {
+      let d = _pdist(cxm, cym);
+      if (d < 1.9 * CW) {
+        CUR_GLOW.push([j, i, 1 - d / (1.9 * CW), h_]);
+      }
+    }
+  }
+}
+
+for (let key of _occ) {
+  let [j, i] = key.split(",").map(Number);
+  if (!_occ.has(`${j + 1},${i + 1}`)) CUR_SHAD.push([j + 1, i + 1]);
+}
+
 function cursor_pos(t) {
   let s = clamp((t - T_CUR0) / (T_CUR1 - T_CUR0));
   let k = 1 - Math.pow(1 - s, 3.5);
@@ -765,11 +745,12 @@ function cursor_pos(t) {
   return [x, y];
 }
 
-const FSET = { 1: ".'", 2: ":.", 3: "^'", 4: "^*", 5: "*(", 6: "(+)", 7: "%&", 8: "#%", 9: "#@", 10: "@" };
 let sparks = [];
 let smoke = [];
 let bits = [];
 let st = { burst: false, click: false, hot: false };
+let HEAT = Array.from({ length: ROWS + 2 }, () => new Float32Array(COLS));
+const FSET = { 1: ".'", 2: ":.", 3: "^'", 4: "^*", 5: "*(", 6: "(+)", 7: "%&", 8: "#%", 9: "#@", 10: "@" };
 let frameCount = 0;
 
 function bed_k(t) {
@@ -1220,10 +1201,9 @@ function frame() {
   draw_click(t, dt, newMap);
   draw_cursor(t, newMap);
 
-  // Canvas Temizleme & Karakterleri Çizme
   ctx.fillStyle = hexc(BG);
   ctx.fillRect(0, 0, W, H);
-  ctx.font = `bold ${Math.floor(CH * 0.95)}px monospace`;
+  ctx.font = "bold 15px 'Courier New', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
@@ -1234,7 +1214,6 @@ function frame() {
     ctx.fillText(ch, (c + 0.5) * CW, (r + 0.5) * CH);
   }
 
-  // Bilgi yazısını animasyon akışına göre yönetme
   if (t > T_BURN && t < T_R0) {
     hint.textContent = "Ateşten doğan bir şey var... ✨";
     hint.style.opacity = "1";
@@ -1248,13 +1227,6 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
-window.addEventListener("resize", () => {
-  initScene();
-  restart();
-});
-
 replayBtn.addEventListener("click", restart);
-
-initScene();
 restart();
 requestAnimationFrame(frame);
